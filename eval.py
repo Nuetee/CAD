@@ -12,7 +12,7 @@ intermediate_prediction_list = []
 optimized_prediction_list = []
 target_value_list = []
 
-for i in range(5):
+for i in range(10):
     model1 = ResidualNet(12, 4, 64, 1)
     model1.load_state_dict(torch.load('./trained model/' + 'model1-' + str(i) +'.pt'))
 
@@ -81,10 +81,8 @@ for i in range(5):
     top_three_predictions = [prediction[1] for prediction in top_three_predictions]
     intermediate_prediction_list.append(top_three_predictions)
 
-    # losses_and_predictions = []
     top_three_optimized_predictions = []
     for prediction in top_three_predictions:
-        # intermediate_prediction_list.append(intermediate_prediction.clone())
         intermediate_prediction = prediction.clone()
 
         optimizer = optim.Adam([intermediate_prediction], lr=0.001)
@@ -105,10 +103,7 @@ for i in range(5):
             optimized_prediction = predicted_input[:, :2].clone()
 
         top_three_optimized_predictions.append(optimized_prediction)
-    #     losses_and_predictions.append((loss.item(), optimized_prediction))
-    # top_optimized_prediction = sorted(losses_and_predictions, key=lambda x: x[0])[:1]
-    # top_optimized_prediction = [prediction[1] for prediction in top_optimized_prediction]
-    # optimized_prediction_list.append(top_optimized_prediction[0])
+
     optimized_prediction_list.append(top_three_optimized_predictions)
 
 loss_fn = torch.nn.MSELoss()
@@ -132,10 +127,6 @@ for i, target_value in enumerate(target_value_list):
     for j in range(3):
         intermediate_prediction_mean_loss[j] += loss_fn(target_value, intermediate_prediction_list[i][j])
         optimized_prediction_mean_loss[j] += loss_fn(target_value, optimized_prediction_list[i][j])
-    # temporal_best_prediction_mean_loss += loss_fn(target_value, temporal_best_prediction_list[i])
-    # mean_prediction_mean_loss += loss_fn(target_value, mean_prediction_list[i])
-    # intermediate_prediction_mean_loss += loss_fn(target_value, intermediate_prediction_list[i])
-    # print("(%f, %f) : (%f, %f) (%f, %f) (%f, %f) (%f, %f)" % (target_value[0][0].item(), target_value[0][1].item(), temporal_best_prediction_list[i][0][0].item(), temporal_best_prediction_list[i][0][1].item(), mean_prediction_list[i][0][0].item(), mean_prediction_list[i][0][1].item(), intermediate_prediction_list[i][0][0].item(), intermediate_prediction_list[i][0][1].item(),optimized_prediction_list[i][0][0].item(), optimized_prediction_list[i][0][1].item()))
 
 temporal_best_prediction_mean_loss /= len(target_value_list)
 mean_prediction_mean_loss /= len(target_value_list)
@@ -149,6 +140,19 @@ print('Mean predictions loss(mean): %f' % mean_prediction_mean_loss)
 for i in range(3):
     print('%d번째 Intermediate predictions loss(mean): %f' % (i, intermediate_prediction_mean_loss[i]))
     print('%d번째 Optimized predictions loss(mean): %f' % (i, optimized_prediction_mean_loss[i]))
-# print('Mean predictions loss(mean): %f' % mean_prediction_mean_loss)
-# # print('Intermediate predictions loss(mean): %f' % intermediate_prediction_mean_loss)
-# print('Optimized predictions loss(mean): %f' % optimized_prediction_mean_loss)
+
+print(target_value_list)
+print(mean_prediction_list)
+print(temporal_best_prediction_list)
+print(intermediate_prediction_list)
+print(optimized_prediction_list)
+# with open('targets.pkl', 'wb') as f:
+#     pickle.dump(target_value_list, f)
+# with open('mean_predictions.pkl', 'wb') as f:
+#     pickle.dump(mean_prediction_list, f)
+# with open('nearest_predictions.pkl', 'wb') as f:
+#     pickle.dump(temporal_best_prediction_list, f)
+# with open('top_three_intermediate_predictions.pkl', 'wb') as f:
+#     pickle.dump(intermediate_prediction_list, f)
+# with open('top_three_optimized_predictions.pkl', 'wb') as f:
+#     pickle.dump(optimized_prediction_list, f)
