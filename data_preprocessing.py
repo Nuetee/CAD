@@ -18,6 +18,11 @@ for i in range(df.shape[0]):
         pre_data.append((PI, Do, intensity, exposure_time * 5, cured_height))
 
 data = pd.DataFrame(pre_data, columns=['PI', 'Do', 'intensity', 'exposure_time', 'cured_height'])
+data['intensity'] = pd.to_numeric(data['intensity'])
+data['exposure_time'] = pd.to_numeric(data['exposure_time'])
+data['cured_height'] = pd.to_numeric(data['cured_height'])
+data = data[(data['intensity'] != 0) & (data['exposure_time'] != 0) & (data['cured_height'] != 0)]
+
 data.to_csv('data_origin_scale.csv', index=False)
 
 scaler = MinMaxScaler()
