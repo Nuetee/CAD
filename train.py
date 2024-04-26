@@ -4,7 +4,7 @@ import matplotlib.style as style
 from dataset import *
 from model import *
 
-def train(model, train_dataloader, val_dataloader, criterion, scheduler, optimizer, epochs, batch_size, device, patience=10):
+def train(model, train_dataloader, criterion, scheduler, optimizer, epochs, batch_size, device, val_dataloader=None, patience=10, is_val=True, lambda1=0):
     patience = 0
     train_loss_list = []
     val_loss_list = []
@@ -23,6 +23,10 @@ def train(model, train_dataloader, val_dataloader, criterion, scheduler, optimiz
             
             loss = criterion(outputs, labels)
 
+            # L1 Regularization
+            l1_norm = sum(p.abs().sum() for p in model.parameters())
+            loss = loss + lambda1 * l1_norm
+
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
@@ -36,34 +40,39 @@ def train(model, train_dataloader, val_dataloader, criterion, scheduler, optimiz
         epoch_loss = running_loss / (len(train_dataloader.dataset) / batch_size)
         train_loss_list.append(epoch_loss)
 
-        model.eval()
-        val_running_loss = 0.0
+        if is_val:
+            model.eval()
+            val_running_loss = 0.0
 
-        for val_inputs, val_labels in val_dataloader:
-            val_inputs, val_labels = val_inputs.to(device), val_labels.to(device)
-            val_inputs = val_inputs[:, :4]
-            # val_outputs = model(val_inputs).squeeze()
-            val_outputs = model(val_inputs)
+            for val_inputs, val_labels in val_dataloader:
+                val_inputs, val_labels = val_inputs.to(device), val_labels.to(device)
+                val_inputs = val_inputs[:, :4]
+                # val_outputs = model(val_inputs).squeeze()
+                val_outputs = model(val_inputs)
 
-            val_loss = criterion(val_outputs, val_labels)
+                val_loss = criterion(val_outputs, val_labels)
 
-            val_running_loss += val_loss.item()
+                val_running_loss += val_loss.item()
 
-        val_epoch_loss = val_running_loss / (len(val_dataloader.dataset) / batch_size)
-        val_loss_list.append(val_epoch_loss)
+            val_epoch_loss = val_running_loss / (len(val_dataloader.dataset) / batch_size)
+            val_loss_list.append(val_epoch_loss)
 
-        print('Epoch [{}/{}], train_loss: {:.4f}, val_loss: {:.4f}'.format(epoch + 1, epochs, epoch_loss, val_epoch_loss))
+            print('Epoch [{}/{}], train_loss: {:.4f}, val_loss: {:.4f}'.format(epoch + 1, epochs, epoch_loss, val_epoch_loss))
 
-        # Early stopping
-        if val_epoch_loss < min_val_loss:
-            min_val_loss = val_epoch_loss
-            patience = 0
+            # Early stopping
+            if val_epoch_loss < min_val_loss:
+                min_val_loss = val_epoch_loss
+                patience = 0
+            else:
+                if patience > 10:
+                    break
+                patience += 1
         else:
-            if patience > 10:
-                break
-            patience += 1
+            print('Epoch [{}/{}], train_loss: {:.4f}'.format(epoch + 1, epochs, epoch_loss))
+
     
     return model, train_loss_list, val_loss_list
+
 
 def show_loss(train_loss_list, val_loss_list, title='MSE Loss'):
     train_x = range(len(train_loss_list))

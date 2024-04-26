@@ -62,7 +62,7 @@ def main():
         optimizer_ft = optim.Adam(model1.parameters(), lr=0.001)
         exp_lr_scheduler = optim.lr_scheduler.StepLR(optimizer_ft, step_size=5, gamma=0.5)
         criterion = nn.MSELoss()
-        model1, train_loss_list1, val_loss_list1 = train(model1, train_loader1, val_loader1, criterion, exp_lr_scheduler, optimizer_ft, 200, batch_size, device, 20)
+        model1, train_loss_list1, val_loss_list1 = train(model1, train_loader1, criterion, exp_lr_scheduler, optimizer_ft, 200, batch_size, device, val_loader1, 20)
 
         model1_name = 'model1-' + str(i)
         show_loss(train_loss_list1, val_loss_list1, model1_name + ' MSE Loss')
@@ -73,7 +73,7 @@ def main():
         optimizer_ft = optim.Adam(model2.parameters(), lr=0.001)
         exp_lr_scheduler = optim.lr_scheduler.StepLR(optimizer_ft, step_size=5, gamma=0.5)
         criterion = nn.MSELoss()
-        model2, train_loss_list2, val_loss_list2 = train(model2, train_loader2, val_loader2, criterion, exp_lr_scheduler, optimizer_ft, 200, batch_size, device, 20)
+        model2, train_loss_list2, val_loss_list2 = train(model2, train_loader2, criterion, exp_lr_scheduler, optimizer_ft, 200, batch_size, device, val_loader2, 20)
 
         model2_name = 'model2-' + str(i)
         show_loss(train_loss_list2, val_loss_list2, model2_name + ' MSE Loss')

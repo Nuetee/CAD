@@ -5,6 +5,8 @@ import pickle
 from torch import nn, optim
 from model import ResidualNet
 from torch.utils.data import DataLoader
+from sklearn.neighbors import NearestNeighbors
+from dataset import *
 
 temporal_best_prediction_list = []
 mean_prediction_list = []
@@ -13,42 +15,74 @@ optimized_prediction_list = []
 target_value_list = []
 
 for i in range(10):
+    # model1 = ResidualNet(12, 4, 64, 1)
+    # model1.load_state_dict(torch.load('./trained model/' + 'model1-' + str(i) +'.pt'))
+
+    # model2 = ResidualNet(12, 3, 64, 2)
+    # model2.load_state_dict(torch.load('./trained model/' + 'model2-' + str(i) +'.pt'))
+
+    ##### KNN ######
     model1 = ResidualNet(12, 4, 64, 1)
-    model1.load_state_dict(torch.load('./trained model/' + 'model1-' + str(i) +'.pt'))
+    model1.load_state_dict(torch.load('./trained model2/model1_layer12.pt'))
 
-    model2 = ResidualNet(12, 3, 64, 2)
-    model2.load_state_dict(torch.load('./trained model/' + 'model2-' + str(i) +'.pt'))
-
-    with open('./dataset/test_dataset1-' + str(i) + '.pkl', 'rb') as f:
+    with open('./dataset2/train_dataset2.pkl', 'rb') as f:
+        train_dataset2 = pickle.load(f)
+    with open('./dataset2/test_dataset1-' + str(i) + '.pkl', 'rb') as f:
         test_dataset1 = pickle.load(f)
-    with open('./dataset/test_dataset2-' + str(i) + '.pkl', 'rb') as f:
+    with open('./dataset2/test_dataset2-' + str(i) + '.pkl', 'rb') as f:
         test_dataset2 = pickle.load(f)
     
+    nearest = NearestNeighbors(n_neighbors=1)
+    nearest.fit(train_dataset2.input)
+    ##### KNN ######
+
+    # with open('./dataset/test_dataset1-' + str(i) + '.pkl', 'rb') as f:
+    #     test_dataset1 = pickle.load(f)
+    # with open('./dataset/test_dataset2-' + str(i) + '.pkl', 'rb') as f:
+    #     test_dataset2 = pickle.load(f)
+
     test_loader1 = DataLoader(test_dataset1, batch_size=1, shuffle=False)
     test_loader2 = DataLoader(test_dataset2, batch_size=1, shuffle=False)
 
     model1.eval()
-    model2.eval()
+    # model2.eval()
 
     loss_fn = torch.nn.MSELoss()
     predictions = []
 
     temp_min_loss = float('inf')
+    
+    ##### KNN ##### 
+    knn_list = []
+    best_prediction = 0
+    for inputs, target in test_loader2:
+        distances, index = nearest.kneighbors(inputs)
+        knn_list.append(train_dataset2.target[index])
+        loss = loss_fn(target, train_dataset2.target[index])
+        if loss < temp_min_loss:
+            temp_min_loss = loss
+            best_prediction = train_dataset2.target[index]        
+    ##### KNN #####
 
-    with torch.no_grad():
-        best_prediction = 0
-        for inputs, target in test_loader2:
-            outputs = model2(inputs)
-            loss = loss_fn(target, outputs)
-            if loss < temp_min_loss:
-                temp_min_loss = loss
-                best_prediction = outputs
-            predictions.append(outputs)  # 차원 추가
+    # with torch.no_grad():
+    #     best_prediction = 0
+    #     for inputs, target in test_loader2:
+    #         outputs = model2(inputs)
+    #         loss = loss_fn(target, outputs)
+    #         if loss < temp_min_loss:
+    #             temp_min_loss = loss
+    #             best_prediction = outputs
+    #         predictions.append(outputs)  # 차원 추가
         
         temporal_best_prediction_list.append(best_prediction)
     
-    mean_prediction = sum(predictions) / len(predictions)
+    # mean_prediction = sum(predictions) / len(predictions)
+    # mean_prediction_list.append(mean_prediction)
+    
+    ##### KNN #####
+    mean_prediction = sum(knn_list) / len(knn_list)
     mean_prediction_list.append(mean_prediction)
+    ##### KNN #####
 
     min_loss = float('inf')
     
